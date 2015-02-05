@@ -1,8 +1,12 @@
-import BaseHTTPServer, SimpleHTTPServer, ssl, argparse
+import http.server
+import socketserver
+import ssl
+import argparse
 import socket
 
 def connection(host, port):
-    httpd = BaseHTTPServer.HTTPServer((host, port), SimpleHTTPServer.SimpleHTTPRequestHandler)
+    Handler = http.server.SimpleHTTPRequestHandler
+    httpd = socketserver.TCPServer((host, port), Handler)
     httpd.socket = ssl.wrap_socket (httpd.socket,ssl_version=ssl.PROTOCOL_SSLv3, certfile='cert/localhost.pem', server_side=True)
 
     print('Serving HTTPS on {!r} port {} \n'.format(host, port))
@@ -19,3 +23,4 @@ parser.add_argument('port', type=int, help='TCP port number')
 args = parser.parse_args()
 
 connection(args.host, args.port)
+
