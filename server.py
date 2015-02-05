@@ -17,10 +17,13 @@ def connection(host, port):
         pass
     httpd.server_close()
 
-parser = argparse.ArgumentParser(description='Connection with SSLv3')
-parser.add_argument('host', help='hostname or IP address')
-parser.add_argument('port', type=int, help='TCP port number')
-args = parser.parse_args()
 
-connection(args.host, args.port)
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser(description='Connection with SSLv3')
+    parser.add_argument('host', help='hostname or IP address')
+    parser.add_argument('port', type=int, help='TCP port number')
+    args = parser.parse_args()
+
+    connection(args.host, args.port)
 
