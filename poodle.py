@@ -1,57 +1,75 @@
-import http.server
-import http.client
-import socketserver
+import SocketServer
 import ssl
 import argparse
 import socket
 import sys
 import threading
-sys.path.append('tests/')
-from testClient import open_ssl
+from pyfancy import *
 from pprint import pprint
 
-CRLF = "\r\n\r\n"
-
-class MyTCPHandler(socketserver.BaseRequestHandler):
-    """
-    The RequestHandler class for our server.
-
-    It is instantiated once per connection to the server, and must
-    override the handle() method to implement communication to the
-    client.
-    """
-
-    def handle(self):
-        httpd.socket = ssl.wrap_socket (httpd.socket,ssl_version=ssl.PROTOCOL_SSLv3, certfile='cert/localhost.pem', server_side=True, cert_reqs=ssl.CERT_NONE)
-        while True:
-            try:
-                data = httpd.socket.recv(1024)
-                if data == '':
-                    break
-                httpd.socket.send(b'200')
-            except ssl.SSLError as e:
-                print("Error SSL")
+class SecureTCPHandler(SocketServer.BaseRequestHandler):
+  def handle(self):
+    self.request = ssl.wrap_socket(self.request, keyfile="cert/localhost.pem", certfile="cert/localhost.pem", server_side=True, ssl_version=ssl.PROTOCOL_SSLv3, cert_reqs=ssl.CERT_NONE)
+    while True:
+        try:
+            data = self.request.recv(1024)
+            if data == '':
                 break
-        return
+            print('The paquet is securly received: %s' % repr(data))
+            self.request.send(b'OK')
+        except ssl.SSLError as e:
+            print('The server encountered an error with SSL: %s' % str(e))
+            break
+    return
 
+class Server:
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
 
-class Client():
+    def connection(self):
+        SocketServer.TCPServer.allow_reuse_address = True
+        httpd = SocketServer.TCPServer((self.host, self.port), SecureTCPHandler)
+        server = threading.Thread(target=httpd.serve_forever)
+        server.start()
+        print('Server is serving HTTPS on {!r} port {}'.format(self.host, self.port))
+        self.httpd = httpd
 
-    def connection(host, port):
-        ssl_socket = socket.create_connection((host,port))
-        ssl_socket= ssl.wrap_socket(ssl_socket, server_side=False, ssl_version=ssl.PROTOCOL_SSLv3, cert_reqs=ssl.CERT_NONE)
-        
-        print('Client is ready on host {!r} and port {}\n'.format(host, port))
-        return ssl_socket
+    def disconnect(self):
+        print('Server stop serving HTTPS on {!r} port {}'.format(self.host, self.port))
+        self.httpd.shutdown()
 
-    def request(ssl_sock, path=0):
+class Client:
+
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+    def connection(self):
+        purpose = ssl.Purpose.SERVER_AUTH
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv3)
+
+        raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ssl_sock = context.wrap_socket(raw_sock, server_hostname=self.host)
+
+        ssl_sock.connect((self.host, self.port))
+        print('Connected to host {!r} and port {}\n'.format(self.host, self.port))
+        self.socket = ssl_sock
+    
+    def send_request(self, path=0):
         print('Cliend send request...')
-        ssl_sock.sendall(b"HEAD / HTTP/1.0\r\nHost: localhost\r\n\r\n")
-        pprint.pprint(conn.recv(1024).split(b"\r\n"))
+        srt_path = ''
+        for x in range(0,path):
+            srt_path += 'A'
+        self.socket.sendall(b"HEAD /"+ srt_path +" HTTP/1.0\r\nHost: "+ self.host +"\r\n\r\n")
+        msg = "".join([str(i) for i in self.socket.recv(1024).split(b"\r\n")])
+        print("Client received confirmation")
+        print("[" + pyfancy.GREEN + msg + pyfancy.END + "]")
 
-    def closeSession(client):
-        print('Client close the connection')
-        client.close()
+    def disconnect(self):
+        print("\nClient disconnect")
+        self.socket.close()
+        
 
 if __name__ == '__main__':
 
@@ -61,18 +79,14 @@ if __name__ == '__main__':
     parser.add_argument('-v', help='debug mode', action="store_true")
     args = parser.parse_args()
 
-    httpd = socketserver.TCPServer((args.host, args.port), MyTCPHandler)
-    server = threading.Thread(target=httpd.serve_forever)
+    server = Server(args.host, args.port)
+    server.connection()
+    client = Client(args.host, args.port)
+    client.connection()
+    client.send_request()
+    client.send_request(3)
+    client.send_request()
+    client.send_request()
 
-    server.start()
-    print('Server is serving HTTPS on {!r} port {}'.format(args.host, args.port))
-
-    client = Client.connection(args.host, args.port)
-
-    Client.request(client)
-    Client.request(client)
-
-    Client.closeSession(client)
-    init_server.shutdown()
-
-    
+    client.disconnect()
+    server.disconnect()
