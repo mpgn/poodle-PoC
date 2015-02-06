@@ -2,15 +2,6 @@
 
 Python version 2.7.9
 
-server side
-
 ```
-python server.py localhost 443
+python2 poodle.py localhost 1111
 ```
-
-client side
-```
-python client.py localhost 443 #optional -v for debug handshake
-```
-
-
