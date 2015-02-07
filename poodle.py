@@ -39,7 +39,7 @@ class SpyTCPHandler(SocketServer.BaseRequestHandler):
             readable = select.select(inputs, [], [])[0]
             for source in readable:
                 if source is server:
-                    print pyfancy.PINK + "Client " + pyfancy.END + " <----- " + pyfancy.BLUE +"Server" + pyfancy.END
+                    print pyfancy.PINK + "Client " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END + " <----- " + pyfancy.BLUE +"Server" + pyfancy.END
                     data = server.recv(4096)
                     if len(data) == 0:
                         running = False
@@ -50,7 +50,7 @@ class SpyTCPHandler(SocketServer.BaseRequestHandler):
                     self.request.send(data)
 
                 elif source is self.request:
-                    print pyfancy.PINK + "Client " + pyfancy.END + " -----> " + pyfancy.BLUE + "Server" + pyfancy.END
+                    print pyfancy.PINK + "Client " + pyfancy.END + " --> " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END + " -----> " + pyfancy.BLUE + "Server" + pyfancy.END
                     
                     data = self.request.recv(4096)
                     if len(data) == 0:
