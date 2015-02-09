@@ -1,17 +1,24 @@
+#!/usr/bin/env python
+
+import argparse
+import random
+import select
+import socket
 import SocketServer
 import ssl
-import argparse
-import socket
+import string
 import sys
 import threading
-import select
-from struct import *
-from pyfancy import *
 from pprint import pprint
+from pyfancy import *
+from struct import *
+
+#Random generation of the cookie, this is the secret the attacker want to know
+COOKIE = ''.join(random.SystemRandom().choice(string.uppercase + string.digits + string.lowercase) for _ in xrange(15))
 
 class SecureTCPHandler(SocketServer.BaseRequestHandler):
   def handle(self):
-    self.request = ssl.wrap_socket(self.request, keyfile="cert/localhost.pem", certfile="cert/localhost.pem", server_side=True, ssl_version=ssl.PROTOCOL_SSLv3, cert_reqs=ssl.CERT_NONE)
+    self.request = ssl.wrap_socket(self.request, keyfile="cert/localhost.pem", certfile="cert/localhost.pem", server_side=True, ssl_version=ssl.PROTOCOL_SSLv3)
 
     #loop to avoid broken pipe
     while True:
@@ -26,42 +33,6 @@ class SecureTCPHandler(SocketServer.BaseRequestHandler):
             break
     return
 
-class SpyTCPHandler(SocketServer.BaseRequestHandler):
-
-    def handle(self):
-        # server choose by the spy. The spy can generate request from the client to this server
-        server = socket.create_connection((SERVER_HOST, SERVER_PORT))
-        # Sockets from which we expect to read
-        inputs = [server, self.request]
-        running = True
-        while running:
-
-            readable = select.select(inputs, [], [])[0]
-            for source in readable:
-                if source is server:
-                    print pyfancy.PINK + "Client " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END + " <----- " + pyfancy.BLUE +"Server" + pyfancy.END
-                    data = server.recv(4096)
-                    if len(data) == 0:
-                        running = False
-     
-                    # poodle attack here !
-                    
-                    # we send data to the client
-                    self.request.send(data)
-
-                elif source is self.request:
-                    print pyfancy.PINK + "Client " + pyfancy.END + " --> " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END + " -----> " + pyfancy.BLUE + "Server" + pyfancy.END
-                    
-                    data = self.request.recv(4096)
-                    if len(data) == 0:
-                        running = False
-     
-                    # poodle attack here !
-                    
-                    # we send data to the server
-                    server.send(data)
-        return
-
 class Server:
     def __init__(self, host, port):
         self.host = host
@@ -75,60 +46,140 @@ class Server:
         server.start()
         print('Server is serving HTTPS on {!r} port {}'.format(self.host, self.port))
         self.httpd = httpd
+        return
+
+    def get_host(self):
+        return self.host
+
+    def get_port(self):
+        return self.port
 
     def disconnect(self):
         print('Server stop serving HTTPS on {!r} port {}'.format(self.host, self.port))
         self.httpd.shutdown()
+        return
 
 class Client:
 
     def __init__(self, host, port):
-        self.host = host
-        self.port = port
+        self.proxy_host = host
+        self.proxy_port = port
 
     def connection(self):
-        print('Client connected to host {!r} and port {}\n'.format(self.host, self.port))
+        print pyfancy.PINK + "Client " + pyfancy.END + " --> " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
+        print('Client connected to the proxy\n')
+        print('Client do handshake with the server')
 
+        # Initialization of the client
         purpose = ssl.Purpose.SERVER_AUTH
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv3)
-
         raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ssl_sock = context.wrap_socket(raw_sock, server_hostname=self.host)
+        ssl_sock = context.wrap_socket(raw_sock, server_hostname=self.proxy_host)
 
-        ssl_sock.connect((self.host, self.port))
+        # Connexion to the proxy
+        ssl_sock.connect((self.proxy_host, self.proxy_port))
         self.socket = ssl_sock
+        return
     
-    def send_request(self, path=0):
-        print('\nCliend send request...')
+    def request_cookie(self, path=0, data=0):
+        print('Cliend send request with a cookie...')
         srt_path = ''
+        srt_data = ''
         for x in range(0,path):
             srt_path += 'A'
-        self.socket.sendall(b"HEAD /"+ srt_path +" HTTP/1.0\r\nHost: "+ self.host +"\r\n\r\n")
+        for x in range(0,data):
+            srt_data += 'D'        
+        self.socket.sendall(b"GET /"+ srt_path +" HTTP/1.1\r\nCookie: " + COOKIE + "\r\n\r\n" + srt_data)
         msg = "".join([str(i) for i in self.socket.recv(1024).split(b"\r\n")])
-        print("[" + pyfancy.GREEN + msg + pyfancy.END + "] Client received confirmation ")
+        print("[" + pyfancy.GREEN + msg + pyfancy.END + "] Client received confirmation from the server")
+        return
 
     def disconnect(self):
-        print("\nClient disconnect")
+        print("Client disconnect")
         self.socket.close()
-        
-class Spy:
+        return
 
-    def __init__(self, host, port):
+class ProxyTCPHandler(SocketServer.BaseRequestHandler):
+
+    def handle(self):
+
+        # Connection to the secure server
+        socket_server = socket.create_connection((server.get_host(), server.get_port()))
+        # input allow us to monitor the socket of the client and the server
+        inputs = [socket_server, self.request]
+        running = True
+        while running:
+            readable = select.select(inputs, [], [])[0]
+            for source in readable:
+                if source is socket_server:
+                    print pyfancy.PINK + "Client " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END + " <----- " + pyfancy.BLUE +"Server" + pyfancy.END
+                    data = socket_server.recv(4096)
+                    if len(data) == 0:
+                        running = False
+
+                    # do action regarding the server response
+                    
+                    # we send data to the client
+                    self.request.send(data)
+
+                elif source is self.request:
+                    print pyfancy.PINK + "Client " + pyfancy.END + " --> " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END + " -----> " + pyfancy.BLUE + "Server" + pyfancy.END
+                    
+                    data = self.request.recv(4096)
+                    if len(data) == 0:
+                        running = False
+     
+                    # do action regarding the client's request
+                    
+                    # we send data to the server
+                    socket_server.send(data)
+        return
+
+class Proxy(Client):
+
+    def __init__(self, client, host, port):
+        self.client = client
         self.host = host
         self.port = port
 
     def connection(self):
         SocketServer.TCPServer.allow_reuse_address = True
-        httpd = SocketServer.TCPServer((self.host, self.port), SpyTCPHandler)
-        spy = threading.Thread(target=httpd.serve_forever)
-        spy.daemon=True
-        spy.start()
-        print('Spy is serving HTTPS on {!r} port {}'.format(self.host, self.port))
-        self.spy = httpd
+        httpd = SocketServer.TCPServer((self.host, self.port), ProxyTCPHandler)
+        proxy = threading.Thread(target=httpd.serve_forever)
+        proxy.daemon=True
+        proxy.start()
+        print('Proxy is launched on {!r} port {}'.format(self.host, self.port))
+        self.proxy = httpd
+        return
 
     def disconnect(self):
-        print('Spy stop serving HTTPS on {!r} port {}'.format(self.host, self.port))
-        self.spy.shutdown()
+        print('Proxy is stopped on {!r} port {}'.format(self.host, self.port))
+        self.proxy.shutdown()
+        return
+
+    def client_connection(self):
+        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
+        self.client.connection()
+        return
+
+    def send_request_from_the_client(self, path=0, data=0):
+        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
+        self.client.request_cookie(path,data)
+        return
+
+    def client_disconect(self):
+        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
+        self.client.disconnect()
+        return
+
+class Poodle:
+
+    def test_poodle_attack(self):
+        spy.client_connection()
+        spy.send_request_from_the_client()
+        spy.send_request_from_the_client(2, 1)
+        spy.client_disconect()
+        return
 
 if __name__ == '__main__':
 
@@ -138,22 +189,16 @@ if __name__ == '__main__':
     parser.add_argument('-v', help='debug mode', action="store_true")
     args = parser.parse_args()
 
-    SERVER_HOST = args.host
-    SERVER_PORT = args.port
+    server  = Server(args.host, args.port)
+    client  = Client(args.host, args.port+1)
+    spy     = Proxy(client, args.host, args.port+1)
+    poodle  = Poodle()
 
-    server = Server(args.host, args.port)
     server.connection()
-
-    spy = Spy(args.host, args.port+1)
     spy.connection()
 
-    client = Client(args.host, args.port+1)
-    client.connection()
+    poodle.test_poodle_attack()
 
-    client.send_request()
-    client.send_request(2)
-
-    client.disconnect()
     spy.disconnect()
     server.disconnect()
     
