@@ -13,9 +13,6 @@ from pprint import pprint
 from pyfancy import *
 from struct import *
 
-#Random generation of the cookie, this is the secret the attacker want to know
-COOKIE = ''.join(random.SystemRandom().choice(string.uppercase + string.digits + string.lowercase) for _ in xrange(15))
-
 class SecureTCPHandler(SocketServer.BaseRequestHandler):
   def handle(self):
     self.request = ssl.wrap_socket(self.request, keyfile="cert/localhost.pem", certfile="cert/localhost.pem", server_side=True, ssl_version=ssl.PROTOCOL_SSLv3)
@@ -64,6 +61,7 @@ class Client:
     def __init__(self, host, port):
         self.proxy_host = host
         self.proxy_port = port
+        self.cookie = ''.join(random.SystemRandom().choice(string.uppercase + string.digits + string.lowercase) for _ in xrange(15))
 
     def connection(self):
         print pyfancy.PINK + "Client " + pyfancy.END + " --> " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
@@ -89,7 +87,7 @@ class Client:
             srt_path += 'A'
         for x in range(0,data):
             srt_data += 'D'        
-        self.socket.sendall(b"GET /"+ srt_path +" HTTP/1.1\r\nCookie: " + COOKIE + "\r\n\r\n" + srt_data)
+        self.socket.sendall(b"GET /"+ srt_path +" HTTP/1.1\r\nCookie: " + self.cookie + "\r\n\r\n" + srt_data)
         msg = "".join([str(i) for i in self.socket.recv(1024).split(b"\r\n")])
         print("[" + pyfancy.GREEN + msg + pyfancy.END + "] Client received confirmation from the server")
         return
