@@ -9,16 +9,16 @@ The attack will be explain regarding the implementation made in this repository.
 
 The diagram below represents the situation: 
 
-    +----------------------+         +---------------------+          +-----------------------+
-    |       - Client -     +-------> |       - Proxy -     +--------> |       -  Server -     |
-    |     sends requests   |         |       intercept     |          |          Oracle       |
-    |                      | <-------+ read server response| <--------+                       |
-    +----------------------+         +-----+--------+------+          +-----------------------+
-                 ^                         |        |                                          
-                 |                         |        |                                          
-                 |                   +-----v--------+------+                                   
+    +--------------------+         +---------------------+          +--------------------+
+    |     - Client -     +-------> |       - Proxy -     +--------> |    -  Server -     |
+    |   sends requests   |         |       intercept     |          |       Oracle       |
+    |                    | <-------+ read server response| <--------+                    |
+    +--------------------+         +-----+--------+------+          +--------------------+
+                 ^                         |        |                               
+                 |                         |        |                               
+                 |                   +-----v--------+------+                        
                  +--------+----------+     - Attacker -    |
-                                     |   alter, decipher   |                                
+                                     |   alter, decipher   |                        
                  inject javascript   +---------------------+ 
 
 - **Server** :
