@@ -61,6 +61,14 @@ Require python version `2.7.*` to launch this exploit. Then just run:
 python poodle.py localhost 1111
 ```
 
+**Warning** Debian no longer support the protocol SSLv3, you may have this error https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=770172:
+```
+AttributeError: 'module' object has no attribute 'PROTOCOL_SSLv3'
+```
+
+The Poodle attack cannot be run on an updated Debian machines. 
+
+
 ##Ressources
 - http://en.wikipedia.org/wiki/POODLE
 - https://www.imperialviolet.org/2014/10/14/poodle.html
