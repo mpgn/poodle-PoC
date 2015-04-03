@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+'''
+    Poodle implementation with a client <--> proxy <--> server
+    Author: mpgn <martial.puygrenier@gmail.com>
+'''
+
 import argparse
 import random
 import re
@@ -279,9 +284,6 @@ class Poodle(Client):
         self.decipherable = status
         return
 
-    def get_start_exploit(self):
-        return self.start_exploit
-
     def set_length_frame(self, data):
         self.frame = data
         self.length_frame = len(data)
@@ -302,18 +304,18 @@ if __name__ == '__main__':
 
     plan = """\
 
-    +----------------------+         +---------------------+          +-----------------------+
-    |                      +-------> |                     +--------> |                       |
-    |        Client        |         |        Proxy        |          |        Server         |
-    |                      | <-------+                     | <--------+                       |
-    +----------------------+         +-----+--------+------+          +-----------------------+
-                                           |        |                                          
-                 ^                         |        |                                          
-                 |                   +-----v--------+------+                                   
-                 |                   |                     |                                   
-                 +--------+----------+       Attacker      |                                   
-                 inject javascript   |                     |                                   
-                                     +---------------------+ 
+    +-----------------+         +------------+          +-----------+
+    |                 +-------> |            +--------> |           |
+    |     Client      |         |    Proxy   |          |   Server  |
+    |                 | <-------+            | <--------+           |
+    +-----------------+         +---+---+----+          +-----------+
+                                    |   |                                          
+                 ^                  |   |                                          
+                 |            +-----v---+------+                                   
+                 |            |                |                                   
+                 --+----------+     Attacker   |                                   
+        inject javascript     |                |                                   
+                              +----------------+ 
     """                              
 
     parser = argparse.ArgumentParser(description='Connection with SSLv3')
