@@ -1,4 +1,4 @@
-#Poddle attack
+#Poodle attack
 A sample application of the **Poddle** (*Padding Oracle On Downgraded Legacy Encryption*) attack with a Man on the Middle exploit to demonstrate the vunlerability of the protocole SSLv3.
 
 ## How the exploit work ?
