@@ -1,3 +1,5 @@
+**Update 2016**: this is my first work for the Poodle PoC, unfortunately SSLv3 is disabled by default on OpenSSL, you cannot launch the python script unless your OpenSSL is not udpate. This poc is still working but i made another one `poodle-poc.py` without SSLv3 to show the cryptography behind the attack.
+
 #Poodle attack
 A sample application of the **Poddle** (*Padding Oracle On Downgraded Legacy Encryption*) attack with a Man on the Middle exploit to demonstrate the vunlerability of the protocole SSLv3.
 
@@ -73,6 +75,8 @@ Video demo :
 [![Poodle-PoC](http://mpgn.fr/poodle.png)](https://sendvid.com/1wjwn1qz)
 
 ##Ressources
+
+- https://blog.cloudflare.com/padding-oracles-and-the-decline-of-cbc-mode-ciphersuites/
 - http://en.wikipedia.org/wiki/POODLE
 - https://www.imperialviolet.org/2014/10/14/poodle.html
 - http://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Block_Chaining_.28CBC.29
