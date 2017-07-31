@@ -1,6 +1,7 @@
-**Update 2016**: this is my first work for the Poodle PoC, unfortunately SSLv3 is disabled by default on OpenSSL, you cannot launch the python script unless your OpenSSL is not udpate. This poc is still working but i made another one `poodle-poc.py` without SSLv3 to show the cryptography behind the attack.
+**Update 2016**: this is my first work for the Poodle PoC, unfortunately SSLv3 is disabled by default on OpenSSL, you cannot launch the python script unless your OpenSSL is not udpate (check requirement part). This poc is still working but i made another one `poodle-poc.py` without SSLv3 to show the cryptography behind the attack.
 
-#Poodle attack
+# Poodle attack
+
 A sample application of the **Poddle** (*Padding Oracle On Downgraded Legacy Encryption*) attack with a Man on the Middle exploit to demonstrate the vunlerability of the protocole SSLv3.
 
 ## How the exploit work ?
@@ -56,9 +57,20 @@ At this point the attacker can run the function `decipher(...)` and make a simpl
 The request will be deciphered byte by byte of each block.
 At the end we will have the final request made by the client.
 
-##Run it !
+## Run it !
 
-Require python version `2.7.*` and openssl 0.9.8 to launch this exploit. Then just run:
+#### Requirement 
+
+```
+root@debian:~/poodle-PoC/old# python -V
+Python 2.7.13 -> Use Pyenv
+root@debian:~/poodle-PoC/old# openssl version
+OpenSSL 1.0.1t  3 May 2016 -> Default with Debian 7
+root@debian:~/poodle-PoC/old# uname -a
+Linux debian 3.2.0-4-amd64 #1 SMP Debian 3.2.89-2 x86_64 GNU/Linux -> Debian 7
+```
+
+Require python version `2.7.*` and openssl 1.0.1t to launch this exploit. Then just run:
 ```
 python poodle.py localhost 1111
 ```
@@ -72,7 +84,7 @@ The Poodle attack cannot be run on updated machine (good things, but bad for the
 
 Video demo :
 
-[![Poodle-PoC](http://mpgn.fr/poodle.png)](https://sendvid.com/1wjwn1qz)
+[Poodle-PoC video demo](https://sendvid.com/1wjwn1qz)
 
 ##Ressources
 
