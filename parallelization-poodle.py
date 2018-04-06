@@ -107,7 +107,6 @@ def run(SECRET):
     v = []
 
     length_total = (original_length//32-2)*16
-    print(length_total)
     secret = [' '] * length_total
 
     v1 = [False] * (original_length//32-2)
