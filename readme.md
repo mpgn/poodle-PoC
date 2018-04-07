@@ -62,7 +62,7 @@ https://crypto.stackexchange.com/questions/202/should-we-mac-then-encrypt-or-enc
 
 This mean that we can alter the ciphered text without the server knowing it.
 
-### Crypthography and attack
+### Cryptography
 
 First the last block need to be full of padding, like we see previously the attacker use path of the request and check the length of the request. 
 
@@ -149,7 +149,7 @@ Choosing a block: if you don't specify the block option, all the block will be d
 
 Then insert the javascript malicious code (`poodle.js`) into the vulnerable website using an XSS for example. Launche the python script and type `help`, then `search`, and finaly `active`. During that time, only two interaction with the javascript will be needed (search and active command).
 
-[![asciicast](https://asciinema.org/a/bKOHtiAbosTWcZZwl51ikcdDC.png)](https://asciinema.org/a/bKOHtiAbosTWcZZwl51ikcdDC)
+[![asciicast](https://asciinema.org/a/174901.png)](https://asciinema.org/a/174901)
 
 
 ## Contributor
