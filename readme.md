@@ -4,7 +4,7 @@ A proof of concept of the Poodle Attack (Padding Oracle On Downgraded Legacy Enc
 
 > a man-in-the-middle exploit which takes advantage of Internet and security software clients' fallback to SSL 3.0
 
-THe Poodle attack allow you to retrieve encrypted data send by a client to a server if the Transport Layer Security used is SSLv3. It does not allow you to retrieve the private key used to encrypt the message or the request HTTP. 
+The Poodle attack allow you to retrieve encrypted data send by a client to a server if the Transport Layer Security used is SSLv3. It does not allow you to retrieve the private key used to encrypt the message or the request HTTP. 
 
 #### SSLv3 and CBC cipher mode
 
@@ -46,7 +46,7 @@ SSLv3 also use [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentic
 
 > keyed-hash message authentication code (HMAC) is a specific type of message authentication code (MAC) involving a cryptographic hash function (hence the 'H') in combination with a secret cryptographic key
 
-With this an attacker can't intercept and alter the cipher then send it back. If the server encounter a problem, he will send an HMAC error.
+With this an attacker can't intercept and alter the request then send it back. If the server encounter a problem, he will send an HMAC error.
 
 #### MAC-then-encrypt
 
@@ -60,7 +60,7 @@ The protocl SSLv3 use the following routine: he receives the data from the clien
 
 https://crypto.stackexchange.com/questions/202/should-we-mac-then-encrypt-or-encrypt-then-mac
 
-This mean that we can alter the ciphered text without the server knowing it.
+This mean that we can alter the ciphered text without the server knowing it. this is great, really :)
 
 ### Cryptography
 
@@ -114,7 +114,7 @@ Once one byte is retrieve he will get all the other byte of the block by adding 
 
 TLS is normaly safe against Poodle, but some implementations don't check the padding, it's like if we used SSLv3, this is why some TLS version are vulnerable.
 
-### Start
+### Start the attack
 
 #### The poodle-poc.py file
 
@@ -136,6 +136,9 @@ python3 parallelization-poodle.py
 
 This is the real exploit. Really usefull with you want to make a proof a concept about the Poodle Attack for a client during a pentest if he used old server and browser. Just put the ip of your malicious proxy into the config browser with the correct port, the proxy will take care of the rest.
 
+requirement:
+- make sure the client and the browser can communicate with the protocol SSLv3, use the tool [testssl.sh](https://testssl.sh/) for example
+
 ```
 $> python3 poodle-exploit.py
 	usage: poodle-exploit.py [-h] [--start-block START_BLOCK]
@@ -145,9 +148,9 @@ $> python3 poodle-exploit.py
 
 $> python3 test.py 192.168.13.1 4443 192.168.13.133 443 --start-block 46 --stop-block 50
 ```
-Choosing a block: if you don't specify the block option, all the block will be decrypted but this can take a long time. I strongly advise you 'know' how the request will be formated and use the script `request-splitter.py` to know the the block you want to decrypt (idealy the cookie block ! :)
+Choosing a block: if you don't specify the block option, all the block will be decrypted but this can take a long time. I strongly advise you 'know' how the request will be formated and use the script `request-splitter.py` to know the block you want to decrypt (idealy the cookie block ! :)
 
-Then insert the javascript malicious code (`poodle.js`) into the vulnerable website using an XSS for example. Launche the python script and type `help`, then `search`, and finaly `active`. During that time, only two interaction with the javascript will be needed (search and active command).
+Then insert the javascript malicious code (`poodle.js`) into the vulnerable website using an XSS for example. Launch the python script and type `help`, then `search`, and finaly `active`. During that time, only two interactions with the javascript will be needed (search and active command).
 
 [![asciicast](https://asciinema.org/a/174901.png)](https://asciinema.org/a/174901)
 
