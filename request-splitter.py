@@ -1,3 +1,12 @@
+'''
+    Poodle  attack implementation
+    Author: mpgn <martial.puygrenier@gmail.com>
+    Created: 03/2018 - Python3
+    License: MIT
+    
+    This script allow you to see in which block the sensitive data will be
+'''
+
 BLOCK_LENGTH = 8
 
 def split_len(seq, length):

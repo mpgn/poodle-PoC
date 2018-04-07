@@ -4,7 +4,7 @@ A proof of concept of the Poodle Attack (Padding Oracle On Downgraded Legacy Enc
 
 > a man-in-the-middle exploit which takes advantage of Internet and security software clients' fallback to SSL 3.0
 
-This PoC explore the cryptography behind the attack, it can be assimilate to the MiTM. Poodle allow you to retrieve plaintext messages if the Transport Layer Security used is SSLv3 (I also made a point for TLS1.0). It does not allow you to retrieve the private key used to encrypt the message or the request HTTP. 
+THe Poodle attack allow you to retrieve encrypted data send by a client to a server if the Transport Layer Security used is SSLv3. It does not allow you to retrieve the private key used to encrypt the message or the request HTTP. 
 
 #### SSLv3 and CBC cipher mode
 
@@ -22,9 +22,15 @@ A request send over HTTPS using SSLv3 will be ciphered with AES/DES and the mode
 Example:
 
 `T|E|X|T|0xab|0x10|0x02` where `0xab|0x10|0x02` is the padding. <br />
-`T|E|X|T|E|0x5c|0x01` where `0x5c|0x01` is the padding.
+`T|E|X|T|E|0x5c|0x01`    where `0x5c|0x01` is the padding.
 
-Also the last block can be fill with a full block of padding. An attacker must be able to make the victim send requests. If we want to retrieve a secret cookie the attacker will use HTTP request because he can control the path and the data of the request. The cookie is secret.
+Also the last block can be fill with a full block of padding meaning the last block can be full a random byte except the last byte.
+
+`T|E|X|T|E|0x5c|0x01|0x3c|0x09|0x5d|0x08|0x04|0x07`    where `|0x5c|0x01|0x3c|0x09|0x5d|0x08|0x04|0x07` is the padding on only the `0x07` is know by the attacker. So if an attacker is able to influence the padding block, he will be able to know that the last byte of the last block is equal to the length of a block.
+
+#### Influence the padding
+
+An attacker must be able to make the victim send requests (using javascript by exploiting an XSS for example). Then he can control the path and the data of each request: 
 
 Example: adding "A" byte to the path of the request
 ```
@@ -40,9 +46,23 @@ SSLv3 also use [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentic
 
 > keyed-hash message authentication code (HMAC) is a specific type of message authentication code (MAC) involving a cryptographic hash function (hence the 'H') in combination with a secret cryptographic key
 
-With this an attacker can't intercept and alter the cipher then send it back.
+With this an attacker can't intercept and alter the cipher then send it back. If the server encounter a problem, he will send an HMAC error.
 
-## Crypthography
+#### MAC-then-encrypt
+
+The protocl SSLv3 use the following routine: he receives the data from the client, decrypt the data, check the integrity with the HMAC.
+
+> MAC-then-Encrypt:
+> Does not provide any integrity on the ciphertext, since we have no way of knowing until we decrypt the message whether it was indeed authentic or spoofed.
+> Plaintext integrity.
+> If the cipher scheme is malleable it may be possible to alter the message to appear valid and have a valid MAC. This is a theoretical point, of course, since practically speaking the MAC secret > should provide protection.
+> Here, the MAC cannot provide any information on the plaintext either, since it is encrypted.
+
+https://crypto.stackexchange.com/questions/202/should-we-mac-then-encrypt-or-encrypt-then-mac
+
+This mean that we can alter the ciphered text without the server knowing it.
+
+### Crypthography and attack
 
 First the last block need to be full of padding, like we see previously the attacker use path of the request and check the length of the request. 
 
@@ -96,15 +116,41 @@ TLS is normaly safe against Poodle, but some implementations don't check the pad
 
 ### Start
 
+#### The poodle-poc.py file
+
+This poc explore the cryptography behind the attack. This file allow us to understand how the attack works in a simple way.
+
 ```bash
-python poodle-poc.py
+python3 poodle-poc.py
 ```
 
-If you have an old version of OpenSSL
+The file `parallelization-poodle.py` is a project, and idea :) check https://github.com/mpgn/poodle-PoC/issues/1
 ```bash
-python old/poodle.py localhost 1111
+python3 parallelization-poodle.py
 ```
+
 [![asciicast](https://asciinema.org/a/cuj891xnb8djk5luiwilr9igk.png)](https://asciinema.org/a/cuj891xnb8djk5luiwilr9igk)
+
+
+#### The poodle-exploit.py file
+
+This is the real exploit. Really usefull with you want to make a proof a concept about the Poodle Attack for a client during a pentest if he used old server and browser. Just put the ip of your malicious proxy into the config browser with the correct port, the proxy will take care of the rest.
+
+```
+$> python3 poodle-exploit.py
+	usage: poodle-exploit.py [-h] [--start-block START_BLOCK]
+							[--stop-block STOP_BLOCK]
+							proxy port server rport
+	poodle-exploit.py: error: the following arguments are required: proxy, port, server, rport
+
+$> python3 test.py 192.168.13.1 4443 192.168.13.133 443 --start-block 46 --stop-block 50
+```
+Choosing a block: if you don't specify the block option, all the block will be decrypted but this can take a long time. I strongly advise you 'know' how the request will be formated and use the script `request-splitter.py` to know the the block you want to decrypt (idealy the cookie block ! :)
+
+Then insert the javascript malicious code (`poodle.js`) into the vulnerable website using an XSS for example. Launche the python script and type `help`, then `search`, and finaly `active`. During that time, only two interaction with the javascript will be needed (search and active command).
+
+[![asciicast](https://asciinema.org/a/bKOHtiAbosTWcZZwl51ikcdDC.png)](https://asciinema.org/a/bKOHtiAbosTWcZZwl51ikcdDC)
+
 
 ## Contributor
 
@@ -118,4 +164,3 @@ python old/poodle.py localhost 1111
 
 * https://en.wikipedia.org/wiki/POODLE
 * https://www.openssl.org/~bodo/ssl-poodle.pdf
-
