@@ -152,8 +152,11 @@ Choosing a block: if you don't specify the block option, all the block will be d
 
 Then insert the javascript malicious code (`poodle.js`) into the vulnerable website using an XSS for example. Launch the python script and type `help`, then `search`, and finaly `active`. During that time, only two interactions with the javascript will be needed (search and active command).
 
-[![asciicast](https://asciinema.org/a/174901.png)](https://asciinema.org/a/174901)
+**Update 01/04/2018**: downgrade option has been added to the exploit. When the exploit detect the TLS protocol, enter the command `downgrade` to downgrade to SSLv3.0. 
 
+How it works ? during the handshake (after the hello client), the exploit send a __handshake_failure__ `15030000020228` then the browser should resend a hello client with SSLv3.0 as default protocol. Tested on chrome version 15 but it's not working on Firefox (I think he doesn't support protocol renegociation), check [#4](https://github.com/mpgn/poodle-PoC/issues/4)
+
+[![asciicast](https://asciinema.org/a/174901.png)](https://asciinema.org/a/174901)
 
 ## Contributor
 
