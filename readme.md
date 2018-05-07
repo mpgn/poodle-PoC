@@ -6,6 +6,8 @@ A proof of concept of the Poodle Attack (Padding Oracle On Downgraded Legacy Enc
 
 The Poodle attack allow you to retrieve encrypted data send by a client to a server if the Transport Layer Security used is SSLv3. It does not allow you to retrieve the private key used to encrypt the message or the request HTTP. 
 
+![imgonline-com-ua-twotoone-luefsrwi2n8iqy](https://user-images.githubusercontent.com/5891788/38616224-81b01940-3d93-11e8-9d59-e825e7ff6f4b.jpg)
+
 #### SSLv3 and CBC cipher mode
 
 SSLv3 is a protocol to encrypt/decrypt and secure your data. In our case, he uses the [CBC cipher mode chainning](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Block_Chaining_.28CBC.29) . The plaintext is divided into block regarding the encryption alogithm (AES,DES, 3DES) and the length is a mulitple of 8 or 16. If the plaintext don't fill the length, a [padding](https://en.wikipedia.org/wiki/Padding_(cryptography)#PKCS7) is added at the end to complete the missing space. I strongly advice you to open this images of [encryption](https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/CBC_encryption.svg/601px-CBC_encryption.svg.png) and [decryption](https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/CBC_decryption.svg/601px-CBC_decryption.svg.png) to read this readme.
